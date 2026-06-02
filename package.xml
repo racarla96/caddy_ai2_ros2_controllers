@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>caddy_ai2_ros2_controllers</name>
+  <version>0.1.0</version>
+  <description>
+    Integration bringup for the Caddy AI2 real-robot controller stack.
+    Launches the CAN-based steering and traction driver controllers together
+    with a bicycle-model cmd_vel relay node.
+  </description>
+  <maintainer email="rafapenya96@gmail.com">Rafael Carbonell Lázaro</maintainer>
+  <license>CC-BY-4.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <!-- Python relay node -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <!-- Controller plugins (loaded by controller_manager at runtime) -->
+  <exec_depend>caddy_ai2_ros2_control_system_steering_driver</exec_depend>
+  <exec_depend>caddy_ai2_ros2_control_system_traction_driver</exec_depend>
+  <exec_depend>caddy_ai2_ros2_bicycle_to_ackermann_steering_adapter</exec_depend>
+
+  <!-- ros2_control infrastructure -->
+  <exec_depend>ros2_control</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+
+  <!-- Robot description (physical parameters) -->
+  <exec_depend>caddy_ai2_ros2_description</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

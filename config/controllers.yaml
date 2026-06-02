@@ -1,0 +1,96 @@
+# =============================================================================
+# Caddy AI2 — Real-robot controller configuration
+#
+# Architecture:
+#
+#   /cmd_vel (Twist)
+#       |
+#       v
+#   [bicycle_cmd_relay node]
+#       |
+#       +──> /<ns>/steering_driver_controller/reference  (Float64, rad)
+#       +──> /<ns>/traction_driver_controller/reference  (Float64, m/s)
+#
+#   [controller_manager]  (no hardware interface — controllers own the CAN bus directly)
+#       ├── steering_driver_controller   (CAN via can_steer_drv)
+#       ├── traction_driver_controller   (CAN via can_trac_drv)
+#       └── bicycle_to_ackermann_steering_adapter  (inactive — see note below)
+#
+# Note on bicycle_to_ackermann_steering_adapter:
+#   This ChainableController is designed for robots with two independent
+#   steering actuators (left + right Ackermann joints).  The Caddy AI2 uses
+#   a MECHANICAL Ackermann linkage driven by a single steering motor, so the
+#   adapter is NOT active in this bringup.  It is declared here for reference
+#   and can be spawned with --inactive if future hardware changes require it.
+# =============================================================================
+
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    steering_driver_controller:
+      type: caddy_ai2_ros2_control_system_steering_driver/SteeringDriverController
+
+    traction_driver_controller:
+      type: caddy_ai2_ros2_control_system_traction_driver/TractionDriverController
+
+    # Declared but NOT spawned automatically — see note above
+    bicycle_to_ackermann_steering_adapter:
+      type: caddy_ai2_ros2_bicycle_to_ackermann_steering_adapter/BicycleToAckermannSteeringAdapter
+
+# -----------------------------------------------------------------------------
+# Steering driver controller
+# Talks directly to the CANopen steering motor over can_steer_drv.
+# -----------------------------------------------------------------------------
+steering_driver_controller:
+  ros__parameters:
+    interface_name: can_steer_drv
+
+    controller_manager_frequency_hz: 100.0
+    hardware_sample_frequency_hz: 500.0
+
+    # Read every CM cycle; write every 10 CM cycles (→ 10 Hz motor commands)
+    read_multiplicity: 1
+    write_multiplicity: 10
+    read_offset: 0
+    write_offset: 1
+
+    # CANopen node IDs — verify against physical CAN bus IDs before deployment
+    motor_node_id: 1
+    encoder_node_id: 127
+
+    # TODO: calibrate on the real vehicle
+    # Formula: counts_per_radian = (encoder_resolution × gear_ratio) / (2π)
+    counts_per_radian: 100000.0
+
+# -----------------------------------------------------------------------------
+# Traction driver controller
+# Talks directly to the Curtis traction motor over can_trac_drv.
+# -----------------------------------------------------------------------------
+traction_driver_controller:
+  ros__parameters:
+    interface_name: can_trac_drv
+
+    controller_manager_frequency_hz: 100.0
+    hardware_sample_frequency_hz: 500.0
+
+    # Read every CM cycle; write every 4 CM cycles (→ 25 Hz, matching Curtis CAN rate)
+    read_multiplicity: 1
+    write_multiplicity: 4
+    read_offset: 0
+    write_offset: 1
+
+# -----------------------------------------------------------------------------
+# Bicycle-to-Ackermann steering adapter (inactive — see architecture note)
+# Requires a hardware with two independent steering joints.
+# Physical parameters from caddy_ai2_ros2_description/bringup/config/robot_params.yaml
+# -----------------------------------------------------------------------------
+bicycle_to_ackermann_steering_adapter:
+  ros__parameters:
+    wheelbase: 1.65         # m  (from robot_params.yaml)
+    track_width: 0.91       # m  (from robot_params.yaml)
+    max_steer_angle: 0.4    # rad (from robot_params.yaml)
+    input_steering_name: steering
+    output_steering_names:
+      - left_steering_joint
+      - right_steering_joint
